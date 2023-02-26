@@ -31,9 +31,7 @@ loop:
 	
 	#form new address
 	move $t2, $t9 #move iterator value to t2
-	li $t3, 4 #put 4 in t3
-	mult $t2, $t3
-	mflo $t2 #put t2 * t3 in t2 (total offset)
+	sll $t2, $t2, 2
 	addu $a0, $t2, $t0 #create register address in a0
 	jal printAddress
 
@@ -48,8 +46,9 @@ printAddress:
 	li $v0, 1
 	syscall
 	#print space
-	lw $a0, blankspace
+	la $a0, blankspace
 	li $v0, 4
+	syscall
 	jr $ra 
 
 endPrintA:

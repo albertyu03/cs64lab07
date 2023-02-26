@@ -84,7 +84,133 @@ Exit:
 
 # YOU CAN ONLY MODIFY THIS FILE FROM THIS POINT ONWARDS:
 SwapCase:
-    #TODO: write your code here, $a0 stores the address of the string
-    
+	#add return to stack
+	addiu $sp, $sp, -4
+	sw $ra, 0($sp)		   
+	
+ 	#add initial address to stack
+	addiu $sp, $sp, -4
+	sw $a0, 0($sp)	
+
+
+	j loop
     # Do not remove this line - it should be the last line in your function code
     jr $ra
+
+loop:
+	#stack design: address is always on top	
+	#pulling initial from stack
+	#array address:
+	lw $a0, 0($sp)
+	addiu $sp, $sp, 4
+
+	jal changeCharacter
+
+	#putting initials on stack
+	#next array address:
+	addiu $sp, $sp, -4
+	addiu $a0, $a0, 1
+	sw $a0, 0($sp)
+
+	jal ConventionCheck
+	j loop
+	
+changeCharacter:
+	#takes in address in a0
+	lb $a1, 0($a0) #put character in a1 	
+	#check if null terminating character
+	beq $a1, $zero, EOS
+
+	addiu $sp, $sp, -4
+	sw $ra, 0($sp) #store return address in stack
+	
+
+	jal checkUpper
+	move $t5, $v0 #t5 contains isUpper
+	jal checkLower
+	move $t6, $v0 #t6 contains isLower		
+	#if nor isUpper && isLower --> invalid char
+	nor $t2, $t5, $t6
+	li $t8, -2
+	bne $t2, $t8, return	
+		
+	#print initial
+	jal printChar
+	#conversion
+	jal convert
+	#print final
+	jal printChar
+	#print endline
+	move $t9, $a0
+	la $a0, newline
+	li $v0, 4
+	syscall
+	move $a0, $t9 #swap back
+	
+	#return
+	j return
+
+printChar:
+	move $t9, $a0
+	li $v0, 11
+	move $a0, $a1
+	syscall
+	move $a0, $t9 #move back
+	
+	jr $ra
+
+convert:
+	#ra links back to changeCharacter
+	li $t3, 1
+	beq $t5, $t3, UpperToLower
+	beq $t6, $t3, LowerToUpper
+	#should be making the jump before this line
+	jr $ra
+	
+
+checkUpper:
+	slti $t0, $a1, 65
+	slti $t1, $a1, 91
+	#for it to be uppercase, has to be !(<65) and (<91)
+	#so, t0 = 0, t1 = 1
+	nor $t0, $t0, $zero
+	sub $t0, $zero, $t0
+	and $t0, $t0, $t1
+	move $v0, $t0		
+	
+	jr $ra
+
+checkLower:
+	slti $t0, $a1, 97
+	slti $t1, $a1, 123	
+	nor $t0, $t0, $zero
+	sub $t0, $zero, $t0
+	and $t0, $t0, $t1
+	move $v0, $t0
+
+	jr $ra
+
+UpperToLower:
+	addi $a1, $a1, 32
+	sb $a1, 0($a0)
+	jr $ra	
+
+LowerToUpper:
+	addi $a1, $a1, -32
+	sb $a1, 0($a0)
+	jr $ra
+
+
+return:
+	lw $ra, 0($sp) #pop return address off stack
+	addiu $sp, $sp, 4
+	jr $ra
+
+EOS:
+	#access 2nd element in stack
+	lw $ra, 0($sp)
+	addiu $sp, $sp, 4
+	jr $ra
+	#should jump us all the way back to main
+	
+
