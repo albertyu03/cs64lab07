@@ -104,6 +104,9 @@ loop:
 	lw $a0, 0($sp)
 	addiu $sp, $sp, 4
 
+	#check for character
+	li $a3, 1
+
 	jal changeCharacter
 
 	#putting initials on stack
@@ -112,7 +115,8 @@ loop:
 	addiu $a0, $a0, 1
 	sw $a0, 0($sp)
 
-	jal ConventionCheck
+	#a3 = 0 --> is a character
+	jal checkChar
 	j loop
 	
 changeCharacter:
@@ -123,7 +127,7 @@ changeCharacter:
 
 	addiu $sp, $sp, -4
 	sw $ra, 0($sp) #store return address in stack
-	
+		
 
 	jal checkUpper
 	move $t5, $v0 #t5 contains isUpper
@@ -133,22 +137,29 @@ changeCharacter:
 	nor $t2, $t5, $t6
 	li $t8, -2
 	bne $t2, $t8, return	
-		
+	
+	li $a3, 0 #fulfills character requirement	
 	#print initial
 	jal printChar
 	#conversion
 	jal convert
+	#print newline
+	jal printNewLine
 	#print final
 	jal printChar
 	#print endline
+	jal printNewLine	
+	
+	#return
+	j return
+printNewLine:
 	move $t9, $a0
 	la $a0, newline
 	li $v0, 4
 	syscall
-	move $a0, $t9 #swap back
+	move $a0, $t9
 	
-	#return
-	j return
+	jr $ra
 
 printChar:
 	move $t9, $a0
@@ -207,10 +218,27 @@ return:
 	jr $ra
 
 EOS:
-	#access 2nd element in stack
+	#access element in stack
 	lw $ra, 0($sp)
 	addiu $sp, $sp, 4
 	jr $ra
 	#should jump us all the way back to main
+
+checkChar:
+	beq $a3, $zero, isChar
+	#not char case --> just return
+	jr $ra	
+
+isChar:
+	#store ra
+	addiu $sp, $sp, -4
+	sw $ra, 0($sp)
+	#check convention
+	jal ConventionCheck
+	#pop ra
+	lw $ra, 0($sp)
+	addiu $sp, $sp, 4
+	#jump out	
+	jr $ra
 	
 
